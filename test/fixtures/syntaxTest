@@ -1,0 +1,57 @@
+#####################
+# Comment test file #
+#####################
+
+
+Test single character comment identifier
+
+# <!-- comments:uncomment # -->
+# This line should be uncommented
+This line should remain uncommented
+# <!-- endcomments -->
+
+; <!-- comments:comment ; -->
+This line should be commented
+; This line should remain commented
+; <!-- endcomments -->
+
+% <!-- comments:toggle % -->
+This line should be commented
+% This line should be uncommented
+% <!-- endcomments -->
+
+
+Test multi character comment identifier
+
+// <!-- comments:uncomment // -->
+// This line should be uncommented
+This line should remain uncommented
+// <!-- endcomments -->
+
+:: <!-- comments:comment :: -->
+This line should be commented
+:: This line should remain commented
+:: <!-- endcomments -->
+
+-- <!-- comments:toggle -- -->
+This line should be commented
+-- This line should be uncommented
+-- <!-- endcomments -->
+
+
+Test supported block comments
+
+/* <!-- comments:uncomment css --> */
+/* This line should be uncommented */
+This line should remain uncommented
+/* <!-- endcomments --> */
+
+<!-- comments:comment html -->
+This line should be commented
+<!-- This line should remain commented -->
+<!-- endcomments -->
+
+<!-- comments:toggle html -->
+This line should be commented
+<!-- This line should be uncommented -->
+<!-- endcomments -->
