@@ -41,7 +41,7 @@ how to use them.
 
 ### Options
 #### padding
-Type: `String`  
+Type: `Number`  
 Default: `1`
 
 Amount of whitespace between the comment delimiters and the line content.
