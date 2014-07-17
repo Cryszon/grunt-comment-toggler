@@ -1,6 +1,6 @@
 # grunt-comment-toggler
 
-> Toggle line comments inside build blocks.
+> Toggle comments inside build blocks.
 
 ## Getting Started
 This plugin requires Grunt `~0.4.5`
@@ -17,27 +17,31 @@ npm install grunt-comment-toggler --save-dev
 
 ## The "toggleComments" task
 `toggleComments` searches files for [build blocks](#build-blocks) and comments
-or uncomments each line inside the block depending on the action. The delimiter
-used by the comments is also specified in the build block.
+or uncomments individual lines or a whole block depending on the command and
+delimiter specified in the build block.
 
 ### Build blocks
 Build blocks are defined using the following syntax:
 ```
-<!-- comments:(action) (comment character) -->
+<!-- comments:(command) (comment delimiter) -->
 Your code goes here
 <!-- endcomments -->
 ```
-- `action` is the type of processing done for each line. Valid actions are
-`comment`, `uncomment` and `toggle`.
-- `comment character` is the delimiter used for comments. Any sequence of
+- `command` is the type of processing done for each line. Following commands are
+supported:
+  - `comment`, `uncomment` and `toggle` for using line comments.
+  - `comment-block`, `uncomment-block` and `toggle-block` for block comments.
+  Block commenting only supports [special delimiters](#special-delimiters).
+
+- `comment delimiter` is the delimiter used for comments. Any sequence of
 non-whitespace characters is valid. There are two
 [special delimiters](#special-delimiters) that can be used.
 
 #### Special delimiters
 For `HTML` and `CSS` specifying a single delimiter for comments isn't enough.
 For this purpose there are two special delimiters `html` and `css` that use
-appropriate block comments to process each line. See [examples](#examples) on
-how to use them.
+appropriate block comments to process each line or the whole block. See
+[examples](#examples) on how to use them.
 
 ### Options
 #### padding
@@ -63,7 +67,7 @@ Example using a single character to uncomment line
 # <!-- endcomments -->
 ```
 
-#### HTML & CSS Example
+#### HTML & CSS line and block examples
 How to process HTML and CSS block comments using
 [special delimiters](#special-delimiters)
 ```html
@@ -78,6 +82,17 @@ How to process HTML and CSS block comments using
 
 <!-- comments:comment html -->
 <p>This line will be commented</p>
+<!-- endcomments -->
+
+<!-- comments:uncomment-block html -->
+<!--
+<p>
+  This whole block will be uncommented.
+  Useful for production only JavaScript
+  and CSS, where commenting each line
+  individually would be inconvenient.
+</p>
+-->
 <!-- endcomments -->
 ```
 
@@ -121,5 +136,8 @@ Add unit tests for any new or changed functionality. Lint and test your code
 using [Grunt](http://gruntjs.com/).
 
 ## Changelog
+### 0.2.0 - 2014-07-17
+- Added support for block comments
+
 ### 0.1.0 - 2014-06-06
 - Initial release

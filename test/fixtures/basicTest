@@ -1,8 +1,0 @@
-###################
-# Basic test file #
-###################
-
-<!-- comments:toggle # -->
-  This line should be commented
-  # This line should be uncommented
-<!-- endcomments -->

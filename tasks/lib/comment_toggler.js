@@ -17,24 +17,31 @@ module.exports = function(grunt) {
         padding: 1
     };
 
-    // Format: <!-- comments:(action) (commentCharacter) -->
+    // Format: <!-- comments:(action) (comment delimiter) -->
     var startRegex = /<!--\s*comments:\s*(\w*)\s*([^\s]+)\s*-->/i;
     var endRegex = /<!--\s*endcomments\s*-->/i;
 
-    var operation = {
-        // Possible types: search, comment, uncomment, toggle
-        type: "search",
-        commentCharacter: "",
-        endcommentCharacter: "",
-        commentRegex: null
+    // This regex captures full comment blocks that start with "[command]-block"
+    // command.
+    // Capture groups:
+    // 1 - command
+    // 2 - delimiter
+    // 3 - content
+    var blockRegex = /.*<!--\s*comments:\s*(.*?)-block\s*([^\s]+)\s*-->.*\n([\s\S]*?)\n.*<!--\s*endcomments\s*-->.*/gi;
+    
+    var commands = {
+        search: "search",
+        comment: "comment",
+        uncomment: "uncomment",
+        toggle: "toggle"
     };
 
-    var validActions = [
-        "comment",
-        "uncomment",
-        "toggle"
-    ];
-    
+    var operation = {
+        command: commands.search,
+        startChar: "",
+        endChar: ""
+    };
+
     /**
      * Looks for comment build blocks inside content, processes them and returns
      * the processed content.
@@ -43,172 +50,262 @@ module.exports = function(grunt) {
      * @returns {String}
      */
     exports.processFile = function(content) {
-        // Split content to an array of lines and store the original newline
+        // Normalize newlines and store the original newline character that
+        // should be restored.
         var newlineChar = (content.match(/\r\n/g)) ? "\r\n" : "\n";
-        var lines = content.split(newlineChar);
+        content = content.replace(/\r\n/g, "\n");
 
+        // Process block comments
+        content = processBlockComments(content);
+
+        // Split content to an array of lines to process line comments
+        var lines = content.split("\n");
+        var padding = exports.options.padding;
+        
+        // Process line comments
         lines.forEach(function(line, i, lines) {
 
-            // If we're currently processing a block and the line matches
-            // endRegex, we should return to searching the next build block
-            if (operation.type !== "search" && line.match(endRegex)) {
-                operation.type = "search";
+            var cmd = operation.command;
+
+            if (cmd !== commands.search && line.match(endRegex)) {
+                operation.command = commands.search;
+                operation.command.regex = startRegex;
 
                 if (exports.options.removeCommands) {
                     lines[i] = "";
                 }
+                return;
+            }
+
+            if (cmd === commands.search) {
+                var m = line.match(startRegex);
+
+                if (m) {
+                    // Extract command from match
+                    operation.command = commands[m[1].toLowerCase()];
+                    
+                    // Extract delimiter from match and handle possible special
+                    // delimiters
+                    var delims = getSpecialDelimiters(m[2]);
+                    operation.startChar = delims[0] || m[2];
+                    operation.endChar = delims[1] || "";
+
+                    if (exports.options.removeCommands) {
+                        lines[i] = "";
+                    }
+                }
 
                 return;
             }
+
+            var processedLine = line;
             
-            var regex = operation.commentRegex;
-            var startDelim = operation.commentCharacter;
-            var endDelim = operation.endcommentCharacter;
-
-            switch (operation.type) {
-                case "search":
-                    lines[i] = search(line);
-                    break;
-
-                case "comment":
-                    lines[i] = comment(line, regex, startDelim, endDelim);
-                    break;
-
-                case "uncomment":
-                    lines[i] = uncomment(line, regex);
-                    break;
-
-                case "toggle":
-                    line = comment(line, regex, startDelim, endDelim);
-                    lines[i] = (line !== lines[i]) ? line : uncomment(line, regex);
-                    break;
+            if (cmd === commands.comment || cmd === commands.toggle) {
+                processedLine = comment(line, operation.startChar, operation.endChar, padding);
             }
+            
+            // If toggled line didn't change after trying to comment it it means
+            // that it should be uncommented instead.
+            if (cmd === commands.uncomment || (cmd === commands.toggle && processedLine === line)) {
+                processedLine = uncomment(line, operation.startChar, operation.endChar);
+            }
+
+            lines[i] = processedLine;
         });
 
         // If we're still running a comment operation after the last line it
         // means that there was a missing "endcomments" tag
-        if (operation.type !== "search") {
+        if (operation.command !== commands.search) {
             grunt.log.warn("Missing 'endcomments' tag.");
         }
 
-        content = lines.join(newlineChar);
+        // Join split lines and restore line endings
+        content = lines.join("\n");
+        content = content.replace(/\n/g, newlineChar);
 
         return content;
     };
     
     /**
-     * Searches a line for a build block and updates 'operation' accordingly.
+     * Returns an array of comment start and end delimiters based on the
+     * supplied special delimiter string.
      * 
-     * @param {String} line
-     * @returns {String}
+     * The first element of the returned array is the start delimiter and the
+     * second one is the end delimiter. Currently supported special delimiters
+     * are "html" and "css". Returns an empty array if the passed special
+     * delimiter is not supported.
+     * 
+     * @param {String} delimiterStr Special delimiter string
+     * @returns {Array}
      */
-    var search = function(line) {
-        var m = line.match(startRegex);
-        
-        if (m) {
-            var type = m[1].toLowerCase();
-            var char = m[2];
-            var endChar = "";
+    var getSpecialDelimiters = function(delimiterStr) {
+        var delims = [];
 
-            if (validActions.indexOf(type) === -1) {
-                grunt.fail.warn("Invalid command: '" + type + "'");
-            }
+        switch (delimiterStr.toLowerCase()) {
+            case "html":
+                delims[0] = "<!--";
+                delims[1] = "-->";
+                break;
 
-            // Handle special comment blocks for HTML and CSS
-            if (char.toLowerCase() === "html") {
-                char = "<!--";
-                endChar = "-->";
-            } else if (char.toLowerCase() === "css") {
-                char = "/*";
-                endChar = "*/";
-            }
-
-            operation.type = type;
-            operation.commentCharacter = char;
-            operation.endcommentCharacter = endChar;
-
-            // Escape comment delimiters for Regex insertion
-            char = escapeRegExp(char);
-            endChar = (endChar) ? escapeRegExp(endChar) : "";
-
-            // Build comment searching Regex from comment delimiters
-            // Capture groups: (whitespace) (commentChar) (content)
-            operation.commentRegex = new RegExp("^(\\s*)(" + char + ")(.*)" + endChar);
-
-            // Handle optional removal of build block
-            if (exports.options.removeCommands) {
-                line = "";
-            }
+            case "css":
+                delims[0] = "/*";
+                delims[1] = "*/";
+                break;
         }
 
-        return line;
+        return delims;
     };
     
     /**
-     * Returns a commented line
+     * Processes block comments and returns processed content
      * 
-     * Checks if a line is commented using commentRegex. If not, it is commented
-     * using supplied start and end delimiters.
-     * 
-     * 
-     * @param {String} line
-     * @param {RegExp} commentRegex
-     * @param {String} startDelim Comment start delimiter
-     * @param {String} endDelim Comment end delimiter
+     * @param {String} content
      * @returns {String}
      */
-    var comment = function(line, commentRegex, startDelim, endDelim) {
-        // Return already commented line
-        if (line.match(commentRegex)) {
-            return line;
+    var processBlockComments = function(content) {
+        var match;
+
+        var newContent = content;
+        
+        // Process each block comment command
+        while ((match = blockRegex.exec(content)) !== null) {
+            var full = match[0];
+            var command = match[1].toLowerCase();
+            var delimiter = match[2];
+            var blockContent = match[3];
+
+            var padding = exports.options.padding;
+
+            var delims = getSpecialDelimiters(delimiter);
+            var startChar = delims[0] || "";
+            var endChar = delims[1] || "";
+
+            var replacement = blockContent;
+
+            if (command === "comment" || command === "toggle") {
+                replacement = comment(blockContent, startChar, endChar, padding);
+            }
+
+            if (command === "uncomment" || (command === "toggle" && replacement === blockContent)) {
+                replacement = uncomment(blockContent, startChar, endChar);
+            }
+
+            if (exports.options.removeCommands) {
+                // Replace command blocks with newlines
+                replacement = "\n" + replacement + "\n";
+                newContent = newContent.replace(full, replacement);
+            } else {
+                // Replace the blockContent in the full match first before
+                // replcaing the whole block with commands included in the
+                // original content
+                var replacedFull = full.replace(blockContent, replacement);
+                newContent = newContent.replace(full, replacedFull);
+            }
         }
 
-        // Separate whitespace from content to retain indenting level
-        var m = line.match(/^(\s*)(.*)/);
-        var whitespace = m[1];
-        var content = m[2];
+        return newContent;
+    };
+
+    /**
+     * Returns commented content
+     * 
+     * Adds comment delimiters to the content and returns it.
+     * 
+     * @param {String} content
+     * @param {String} [startDelim=""] Comment start delimiter
+     * @param {String} [endDelim=""] Comment end delimiter
+     * @param {Number} [padding=0] Padding between line content and delimiters
+     * @returns {String}
+     */
+    var comment = function(content, startDelim, endDelim, padding) {
+
+        padding = padding || 0;
+
+        // Regex to check and return already commented line
+        var r = generateCommentRegex(startDelim, endDelim);
+        if (content.match(r)) {
+            return content;
+        }
+
+        // Separate whitespace from content to retain indenting and newlines
+        // (whitespace) (content) (endWhitespace)
+        var r2 = /^(\s*)([\s\S]*?)(\s*)$/g;
+        var m = r2.exec(content);
+        var startWs = m[1];
+        var innerContent = m[2];
+        var endWs = m[3];
 
         // Create a padding string with length according to options
         // TODO - ES6 - http://goo.gl/WFr5qY
-        var padding = new Array(exports.options.padding + 1).join(" ");
+        var paddingStr = new Array(padding + 1).join(" ");
 
+        // Setup delimiter strings
+        startDelim = startDelim || "";
         // Add padding to end delimiter if it's used
-        endDelim = (endDelim) ? padding + endDelim : "";
+        endDelim = (endDelim) ? paddingStr + endDelim : "";
 
         // Build the commented line
-        line = whitespace + startDelim + padding + content.trim() + endDelim;
+        content = startWs + startDelim + paddingStr + innerContent.trim() + endDelim + endWs;
 
-        return line;
+        return content;
+    };
+
+    /**
+     * Removes comment delimiters from the content and returns it.
+     * 
+     * Returns content without comment delimiters and with whitespace trimmed
+     * between the delimiters and the content. Newlines are preserved.
+     * 
+     * @param {String} content
+     * @param {String} [startDelim=""] Comment start delimiter
+     * @param {String} [endDelim=""] Comment end delimiter
+     * @returns {String}
+     */
+    var uncomment = function(content, startDelim, endDelim) {
+
+        startDelim = startDelim || "";
+        endDelim = endDelim || "";
+
+        // Capture: (whitespace) (content)
+        var r = generateCommentRegex(startDelim, endDelim);
+        var m = r.exec(content);
+
+        // Regex tries to match comment characters and capture the inner
+        // content. This is used to tell what should be returned.
+        if (m === null) {
+            return content;
+        } else {
+            // (startWs) (content) (endWs)
+            return m[1] + m[2] + m[3];
+        }
     };
     
     /**
-     * Returns an uncommented line
+     * Returns a comment RegExp constructed from start and end delimiters.
      * 
-     * Checks if a line is commented using commentRegex and returns it
-     * uncommented.
+     * The returned RegExp matches commented content and captures following
+     * groups:
+     * 1. Whitespace before comment delimiter
+     * 2. Content between comment delimiters
+     * 3. Whitespace after comment delimiter
      * 
-     * @param {String} line
-     * @param {RegExp} commentRegex
-     * @returns {String}
+     * @param {String} startDelim
+     * @param {String} endDelim
+     * @returns {RegExp}
      */
-    var uncomment = function(line, commentRegex) {
-        // Capture: (whitespace) (commentChar) (content)
-        var m = line.match(commentRegex);
-
-        // Return already uncommented line
-        if (m === null) {
-            return line;
-        }
-
-        var whitespace = m[1];
-        var content = m[3];
-
-        // Build the uncommented line
-        line = whitespace + content.trim();
-
-        return line;
+    var generateCommentRegex = function(startDelim, endDelim) {
+        // [^\S\n]* is used after and before delimiters instead of \s* to
+        // preserve newlines and only trim line whitespace between content and
+        // comment delimiters.
+        // Regex explanation:
+        // (whitespace) [delimiter] [whitespace (no \n)] (content) [whitepsace (no \n)] [delimiter] (whitespace)
+        // Capture groups:
+        // (whitespace) (content) (endWhitespace)
+        var r = new RegExp("^(\\s*)" + escapeRegExp(startDelim) + "[^\\S\\n]*([\\s\\S]*?)[^\\S\\n]*" + escapeRegExp(endDelim) + "(\\s*)$", "g");
+        //grunt.log.writeln(r);
+        return r;
     };
-    
+
     // http://goo.gl/L7cZZN
     var escapeRegExp = function(string) {
         return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
