@@ -28,20 +28,42 @@ exports.comment_toggler = {
         done();
     },
     default_options: function(test) {
-        test.expect(1);
-
-        var actual = grunt.file.read('tmp/default_options');
-        var expected = grunt.file.read('test/expected/default_options');
-        test.equal(actual, expected, 'should describe what the default behavior is.');
+        test.expect(3);
+        
+        // Block comments
+        var actual = grunt.file.read('tmp/default_options/blockComments');
+        var expected = grunt.file.read('test/expected/default_options/blockComments.exp');
+        test.equal(actual, expected, 'Should process block comments using default options.');
+        
+        // Line comments
+        actual = grunt.file.read('tmp/default_options/lineComments');
+        expected = grunt.file.read('test/expected/default_options/lineComments.exp');
+        test.equal(actual, expected, 'Should process line comments using default options.');
+        
+        // Special line comments
+        actual = grunt.file.read('tmp/default_options/specialLineComments');
+        expected = grunt.file.read('test/expected/default_options/specialLineComments.exp');
+        test.equal(actual, expected, 'Should process special line comments using default options.');
 
         test.done();
     },
     custom_options: function(test) {
-        test.expect(1);
-
-        var actual = grunt.file.read('tmp/custom_options');
-        var expected = grunt.file.read('test/expected/custom_options');
-        test.equal(actual, expected, 'Should retain the original indenting level, remove command blocks and add 4 spaces of padding after comment delimiter.');
+        test.expect(3);
+        
+        // Block comments
+        var actual = grunt.file.read('tmp/default_options/blockComments');
+        var expected = grunt.file.read('test/expected/default_options/blockComments.exp');
+        test.equal(actual, expected, 'Should process block comments using custom options.');
+        
+        // Line comments
+        actual = grunt.file.read('tmp/default_options/lineComments');
+        expected = grunt.file.read('test/expected/default_options/lineComments.exp');
+        test.equal(actual, expected, 'Should process line comments using custom options.');
+        
+        // Special line comments
+        actual = grunt.file.read('tmp/default_options/specialLineComments');
+        expected = grunt.file.read('test/expected/default_options/specialLineComments.exp');
+        test.equal(actual, expected, 'Should process special line comments using custom options.');
 
         test.done();
     }

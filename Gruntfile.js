@@ -30,7 +30,9 @@ module.exports = function(grunt) {
         toggleComments: {
             default_options: {
                 files: {
-                    'tmp/default_options': 'test/fixtures/syntaxTest'
+                    "tmp/default_options/blockComments": "test/fixtures/blockComments.fix",
+                    "tmp/default_options/lineComments": "test/fixtures/lineComments.fix",
+                    "tmp/default_options/specialLineComments": "test/fixtures/specialLineComments.fix",
                 }
             },
             custom_options: {
@@ -38,7 +40,11 @@ module.exports = function(grunt) {
                     padding: 4,
                     removeCommands: true
                 },
-                files: {"tmp/custom_options": "test/fixtures/basicTest"}
+                files: {
+                    "tmp/custom_options/blockComments": "test/fixtures/blockComments.fix",
+                    "tmp/custom_options/lineComments": "test/fixtures/lineComments.fix",
+                    "tmp/custom_options/specialLineComments": "test/fixtures/specialLineComments.fix",
+                }
             }
         },
         // Unit tests.
