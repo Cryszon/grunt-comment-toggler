@@ -1,7 +1,7 @@
 {
     "name": "grunt-comment-toggler",
     "description": "Toggle comments inside build blocks.",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "homepage": "https://github.com/Cryszon/grunt-comment-toggler",
     "author": {
         "name": "Kimmo Salmela",

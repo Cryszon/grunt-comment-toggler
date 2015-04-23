@@ -1,6 +1,6 @@
 /*
  * grunt-comment-toggler
- * 
+ *
  *
  * Copyright (c) 2014 Kimmo Salmela
  * Licensed under the MIT license.
@@ -28,7 +28,7 @@ module.exports = function(grunt) {
     // 2 - delimiter
     // 3 - content
     var blockRegex = /.*<!--\s*comments:\s*(.*?)-block\s*([^\s]+)\s*-->.*\n([\s\S]*?)\n.*<!--\s*endcomments\s*-->.*/gi;
-    
+
     var commands = {
         search: "search",
         comment: "comment",
@@ -45,7 +45,7 @@ module.exports = function(grunt) {
     /**
      * Looks for comment build blocks inside content, processes them and returns
      * the processed content.
-     * 
+     *
      * @param {String} content
      * @returns {String}
      */
@@ -61,7 +61,7 @@ module.exports = function(grunt) {
         // Split content to an array of lines to process line comments
         var lines = content.split("\n");
         var padding = exports.options.padding;
-        
+
         // Process line comments
         lines.forEach(function(line, i, lines) {
 
@@ -69,7 +69,6 @@ module.exports = function(grunt) {
 
             if (cmd !== commands.search && line.match(endRegex)) {
                 operation.command = commands.search;
-                operation.command.regex = startRegex;
 
                 if (exports.options.removeCommands) {
                     lines[i] = "";
@@ -83,7 +82,7 @@ module.exports = function(grunt) {
                 if (m) {
                     // Extract command from match
                     operation.command = commands[m[1].toLowerCase()];
-                    
+
                     // Extract delimiter from match and handle possible special
                     // delimiters
                     var delims = getSpecialDelimiters(m[2]);
@@ -99,11 +98,11 @@ module.exports = function(grunt) {
             }
 
             var processedLine = line;
-            
+
             if (cmd === commands.comment || cmd === commands.toggle) {
                 processedLine = comment(line, operation.startChar, operation.endChar, padding);
             }
-            
+
             // If toggled line didn't change after trying to comment it it means
             // that it should be uncommented instead.
             if (cmd === commands.uncomment || (cmd === commands.toggle && processedLine === line)) {
@@ -125,16 +124,16 @@ module.exports = function(grunt) {
 
         return content;
     };
-    
+
     /**
      * Returns an array of comment start and end delimiters based on the
      * supplied special delimiter string.
-     * 
+     *
      * The first element of the returned array is the start delimiter and the
      * second one is the end delimiter. Currently supported special delimiters
      * are "html" and "css". Returns an empty array if the passed special
      * delimiter is not supported.
-     * 
+     *
      * @param {String} delimiterStr Special delimiter string
      * @returns {Array}
      */
@@ -155,10 +154,10 @@ module.exports = function(grunt) {
 
         return delims;
     };
-    
+
     /**
      * Processes block comments and returns processed content
-     * 
+     *
      * @param {String} content
      * @returns {String}
      */
@@ -166,7 +165,7 @@ module.exports = function(grunt) {
         var match;
 
         var newContent = content;
-        
+
         // Process each block comment command
         while ((match = blockRegex.exec(content)) !== null) {
             var full = match[0];
@@ -208,9 +207,9 @@ module.exports = function(grunt) {
 
     /**
      * Returns commented content
-     * 
+     *
      * Adds comment delimiters to the content and returns it.
-     * 
+     *
      * @param {String} content
      * @param {String} [startDelim=""] Comment start delimiter
      * @param {String} [endDelim=""] Comment end delimiter
@@ -252,10 +251,10 @@ module.exports = function(grunt) {
 
     /**
      * Removes comment delimiters from the content and returns it.
-     * 
+     *
      * Returns content without comment delimiters and with whitespace trimmed
      * between the delimiters and the content. Newlines are preserved.
-     * 
+     *
      * @param {String} content
      * @param {String} [startDelim=""] Comment start delimiter
      * @param {String} [endDelim=""] Comment end delimiter
@@ -279,16 +278,16 @@ module.exports = function(grunt) {
             return m[1] + m[2] + m[3];
         }
     };
-    
+
     /**
      * Returns a comment RegExp constructed from start and end delimiters.
-     * 
+     *
      * The returned RegExp matches commented content and captures following
      * groups:
      * 1. Whitespace before comment delimiter
      * 2. Content between comment delimiters
      * 3. Whitespace after comment delimiter
-     * 
+     *
      * @param {String} startDelim
      * @param {String} endDelim
      * @returns {RegExp}
