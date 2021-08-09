@@ -136,6 +136,12 @@ Add unit tests for any new or changed functionality. Lint and test your code
 using [Grunt](http://gruntjs.com/).
 
 ## Changelog
+### 0.2.2 - 2016-02-22
+- Support Grunt 1.0
+
+### 0.2.1 - 2015-04-23
+- Fix "Warning: Cannot assign to read only property 'regex' of search" ([#2](https://github.com/Cryszon/grunt-comment-toggler/issues/2))
+
 ### 0.2.0 - 2014-07-17
 - Added support for block comments
 
