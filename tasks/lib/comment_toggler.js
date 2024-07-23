@@ -235,7 +235,7 @@ module.exports = function(grunt) {
         var endWs = m[3];
 
         // Create a padding string with length according to options
-        // TODO - ES6 - http://goo.gl/WFr5qY
+        // TODO - ES6 - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/repeat
         var paddingStr = new Array(padding + 1).join(" ");
 
         // Setup delimiter strings
@@ -305,7 +305,7 @@ module.exports = function(grunt) {
         return r;
     };
 
-    // http://goo.gl/L7cZZN
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions
     var escapeRegExp = function(string) {
         return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
     };
